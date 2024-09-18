@@ -17,17 +17,19 @@ import (
 )
 
 type serverBuilder struct {
-	dbType     string
-	dbConn     string
-	dbPool     *sqlx.DB
-	router     *http.ServeMux
-	httpServer *http.Server
+	dbType      string
+	dbConn      string
+	dbPool      *sqlx.DB
+	router      *http.ServeMux
+	httpServer  *http.Server
+	middlewares []func(http.Handler) http.Handler
 }
 
 // NewServerBuilder initializes the serverBuilder
 func NewServerBuilder() *serverBuilder {
 	return &serverBuilder{
-		router: http.NewServeMux(),
+		router:      http.NewServeMux(),
+		middlewares: []func(http.Handler) http.Handler{},
 	}
 }
 
@@ -58,6 +60,21 @@ func (b *serverBuilder) WithHealthCheck() *serverBuilder {
 	return b
 }
 
+// AddMiddleware adds middleware to the ordered middleware stack
+func (b *serverBuilder) Use(mw func(http.Handler) http.Handler) *serverBuilder {
+	b.middlewares = append(b.middlewares, mw)
+	return b
+}
+
+// applyMiddlewares applies all registered middlewares in order
+func (b *serverBuilder) applyMiddlewares(handler http.Handler) http.Handler {
+	for i := len(b.middlewares) - 1; i >= 0; i-- {
+		// Apply them in reverse order to maintain insertion order
+		handler = b.middlewares[i](handler)
+	}
+	return handler
+}
+
 // BuildServer builds the HTTP server with graceful shutdown
 func (b *serverBuilder) BuildServer(addr string) *serverBuilder {
 	v1 := http.NewServeMux()
@@ -65,7 +82,7 @@ func (b *serverBuilder) BuildServer(addr string) *serverBuilder {
 
 	b.httpServer = &http.Server{
 		Addr:    addr,
-		Handler: v1,
+		Handler: b.applyMiddlewares(v1),
 	}
 
 	return b

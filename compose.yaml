@@ -1,0 +1,12 @@
+services:
+  db:
+    image: postgres:16
+    container_name: budgetly_db
+    environment:
+      POSTGRES_USER: budgetly
+      POSTGRES_PASSWORD: P@ssw0rd
+      POSTGRES_DB: budgetly
+    ports:
+    - 127.0.0.1:5432:5432
+    volumes:
+    - ./scripts/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql

@@ -1,6 +1,9 @@
 package main
 
-import "github.com/ZiadMansourM/budgetly/cmd/api"
+import (
+	"github.com/ZiadMansourM/budgetly/cmd/api"
+	"github.com/ZiadMansourM/budgetly/pkg/middlewares"
+)
 
 func main() {
 	// Use the builder to assemble the server with plug-and-play apps
@@ -9,6 +12,7 @@ func main() {
 		WithDatabase("postgres", "postgres://budgetly:P@ssw0rd@127.0.0.1:5432/budgetly?sslmode=disable").
 		WithUserApp().
 		WithHealthCheck().
+		Use(middlewares.LoggingMiddleware).
 		BuildServer("127.0.0.1:8080")
 
 	// Start the server with graceful shutdown
