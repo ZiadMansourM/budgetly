@@ -9,7 +9,7 @@ func main() {
 		WithDatabase("postgres", "postgres://budgetly:P@ssw0rd@127.0.0.1:5432/budgetly?sslmode=disable").
 		WithUserApp().
 		WithHealthCheck().
-		BuildServer("0.0.0.0:8080")
+		BuildServer("127.0.0.1:8080")
 
 	// Start the server with graceful shutdown
 	serverBuilder.StartServer()
