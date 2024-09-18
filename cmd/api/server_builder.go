@@ -1,7 +1,8 @@
-package main
+package api
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,15 +10,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ZiadMansourM/budgetly/internal/handlers"
-	"github.com/ZiadMansourM/budgetly/internal/models"
-	"github.com/ZiadMansourM/budgetly/internal/services"
+	"github.com/ZiadMansourM/budgetly/internal/apps/users"
 	"github.com/ZiadMansourM/budgetly/pkg/db"
 	"github.com/ZiadMansourM/budgetly/utils"
 	"github.com/jmoiron/sqlx"
 )
 
-type ServerBuilder struct {
+type serverBuilder struct {
 	dbType     string
 	dbConn     string
 	dbPool     *sqlx.DB
@@ -25,15 +24,15 @@ type ServerBuilder struct {
 	httpServer *http.Server
 }
 
-// NewServerBuilder initializes the ServerBuilder
-func NewServerBuilder() *ServerBuilder {
-	return &ServerBuilder{
+// NewServerBuilder initializes the serverBuilder
+func NewServerBuilder() *serverBuilder {
+	return &serverBuilder{
 		router: http.NewServeMux(),
 	}
 }
 
 // WithDatabase sets up the database connection
-func (b *ServerBuilder) WithDatabase(dbType, dbConn string) *ServerBuilder {
+func (b *serverBuilder) WithDatabase(dbType, dbConn string) *serverBuilder {
 	pool, err := db.OpenDB(dbType, dbConn)
 	if err != nil {
 		log.Fatalf("error opening database connection: %v", err)
@@ -45,22 +44,14 @@ func (b *ServerBuilder) WithDatabase(dbType, dbConn string) *ServerBuilder {
 }
 
 // WithUserApp sets up the entire User application (model, service, handler, and routes)
-func (b *ServerBuilder) WithUserApp() *ServerBuilder {
-	// Initialize User Model
-	userModel := &models.UserModel{DB: b.dbPool}
-
-	// Initialize User Service
-	userService := &services.UserService{UserRepo: userModel}
-
-	// Initialize User Handler and Register Routes
-	userHandler := &handlers.UserHandler{UserService: userService}
+func (b *serverBuilder) WithUserApp() *serverBuilder {
+	userHandler := users.NewUserApp(b.dbPool)
 	userHandler.RegisterRoutes(b.router)
-
 	return b
 }
 
 // WithHealthCheck adds a health check route
-func (b *ServerBuilder) WithHealthCheck() *ServerBuilder {
+func (b *serverBuilder) WithHealthCheck() *serverBuilder {
 	b.router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJson(w, http.StatusOK, map[string]string{"message": "API is healthy"})
 	})
@@ -68,7 +59,7 @@ func (b *ServerBuilder) WithHealthCheck() *ServerBuilder {
 }
 
 // BuildServer builds the HTTP server with graceful shutdown
-func (b *ServerBuilder) BuildServer(addr string) *ServerBuilder {
+func (b *serverBuilder) BuildServer(addr string) *serverBuilder {
 	v1 := http.NewServeMux()
 	v1.Handle("/api/v1/", http.StripPrefix("/api/v1", b.router))
 
@@ -81,12 +72,13 @@ func (b *ServerBuilder) BuildServer(addr string) *ServerBuilder {
 }
 
 // StartServer starts the HTTP server with graceful shutdown
-func (b *ServerBuilder) StartServer() {
+func (b *serverBuilder) StartServer() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-quit
+		fmt.Println("")
 		log.Println("Gracefully shutting down server...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

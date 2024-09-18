@@ -1,27 +1,25 @@
-package handlers
+package users
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-
-	"github.com/ZiadMansourM/budgetly/internal/services"
 )
 
-// UserHandler is an HTTP handler for user-related operations
+// userHandler is an HTTP handler for user-related operations
 // (e.g., registration, fetching by ID, etc.)
-type UserHandler struct {
-	UserService *services.UserService
+type userHandler struct {
+	userService *userService
 }
 
 // Register routes for user-related actions
-func (h *UserHandler) RegisterRoutes(router *http.ServeMux) {
-	router.HandleFunc("POST /users/register", h.Register)
-	router.HandleFunc("GET /users/{id}", h.GetByID)
+func (h *userHandler) RegisterRoutes(router *http.ServeMux) {
+	router.HandleFunc("POST /users/register", h.register)
+	router.HandleFunc("GET /users/{id}", h.getByID)
 }
 
 // Register is an HTTP handler for registering a new user
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Email    string `json:"email"`
@@ -35,7 +33,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call the service layer to register the user
-	user, err := h.UserService.Register(req.Username, req.Email, req.Password)
+	user, err := h.userService.register(req.Username, req.Email, req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -46,7 +44,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByID is an HTTP handler for fetching a user by ID
-func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *userHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	// Parse the user ID from the URL
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || userID <= 0 {
@@ -55,7 +53,7 @@ func (h *UserHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call the service layer to retrieve the user
-	user, err := h.UserService.GetByID(userID)
+	user, err := h.userService.getByID(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

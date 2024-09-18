@@ -1,25 +1,29 @@
-package services
+package users
 
 import (
 	"errors"
 	"time"
-
-	"github.com/ZiadMansourM/budgetly/internal/models"
 )
 
-type UserService struct {
-	UserRepo *models.UserModel
+type userService struct {
+	userRepo *userModel
+}
+
+func newUserService(userRepo *userModel) *userService {
+	return &userService{
+		userRepo: userRepo,
+	}
 }
 
 // RegisterUser handles user registration
-func (s *UserService) Register(username, email, password string) (*models.User, error) {
+func (s *userService) register(username, email, password string) (*User, error) {
 	// Validate the input
 	if username == "" || email == "" || password == "" {
 		return nil, errors.New("all fields are required")
 	}
 
 	// Create a new user object
-	user := &models.User{
+	user := &User{
 		Username:       username,
 		Email:          email,
 		PasswordHashed: hashPassword(password), // Simplified password hashing for this example
@@ -27,7 +31,7 @@ func (s *UserService) Register(username, email, password string) (*models.User, 
 	}
 
 	// Save the user to the database using the UserModel
-	userID, err := s.UserRepo.Create(user)
+	userID, err := s.userRepo.create(user)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +41,9 @@ func (s *UserService) Register(username, email, password string) (*models.User, 
 }
 
 // GetUserByID retrieves a user by their ID
-func (s *UserService) GetByID(id int) (*models.User, error) {
+func (s *userService) getByID(id int) (*User, error) {
 	// Retrieve the user from the database using the UserModel
-	return s.UserRepo.GetByID(id)
+	return s.userRepo.getByID(id)
 }
 
 // hashPassword is a simplified password hashing function (use a proper password hashing library in production)

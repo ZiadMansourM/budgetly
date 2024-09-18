@@ -1,4 +1,6 @@
-package models
+// This is the model layer, responsible for interacting
+// with the database and returning data to the service layer
+package users
 
 import (
 	"time"
@@ -6,9 +8,15 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// UserModel wraps the database connection pool using sqlx
-type UserModel struct {
+// userModel wraps the database connection pool using sqlx
+type userModel struct {
 	DB *sqlx.DB
+}
+
+func newUserModel(db *sqlx.DB) *userModel {
+	return &userModel{
+		DB: db,
+	}
 }
 
 type User struct {
@@ -20,7 +28,7 @@ type User struct {
 }
 
 // Create inserts a new user into the database and returns the inserted user's ID
-func (m *UserModel) Create(u *User) (int, error) {
+func (m *userModel) create(u *User) (int, error) {
 	// Use NamedExec for more readable query with named parameters
 	query := `INSERT INTO users (username, email, password_hashed, created_at) 
 	VALUES (:username, :email, :password_hashed, :created_at) 
@@ -46,7 +54,7 @@ func (m *UserModel) Create(u *User) (int, error) {
 }
 
 // GetByID returns a user by ID
-func (m *UserModel) GetByID(id int) (*User, error) {
+func (m *userModel) getByID(id int) (*User, error) {
 	// Use Get to map a single result to a struct
 	query := `SELECT id, username, email, password_hashed, created_at 
 	FROM users WHERE id = $1`
