@@ -2,29 +2,25 @@ package main
 
 import (
 	"github.com/ZiadMansourM/budgetly/cmd/api"
-	"github.com/ZiadMansourM/budgetly/pkg/config"
 	"github.com/ZiadMansourM/budgetly/pkg/middlewares"
+	"github.com/ZiadMansourM/budgetly/pkg/settings"
 )
 
 func main() {
-	// Initialize logger from environment variables
-	logger := config.InitializeLogger()
-
-	// Load configuration from environment variables or .env file
-	cfg, err := config.LoadConfig(".env")
+	// Load the application settings (includes logger and environment variables).
+	settings, err := settings.Init(".env")
 	if err != nil {
-		logger.Error("Error loading configuration", "error", err)
-		return
+		panic(err)
 	}
 
 	// Use the builder to assemble the server with plug-and-play apps
 	// E.g. WithUserApp which encapsulate all its components (model, service, handler, routes).
-	serverBuilder := api.NewServerBuilder(logger).
-		WithDatabase("postgres", cfg.DBConnectionString).
+	serverBuilder := api.NewServerBuilder(settings.Logger).
+		WithDatabase("postgres", settings.DBConnectionString).
 		WithUserApp().
 		WithHealthCheck().
 		Use(middlewares.LoggingMiddleware).
-		BuildServer(cfg.ServerAddress)
+		BuildServer(settings.ServerAddress)
 
 	// Start the server with graceful shutdown
 	serverBuilder.StartServer()

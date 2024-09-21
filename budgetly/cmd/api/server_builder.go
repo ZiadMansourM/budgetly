@@ -39,7 +39,7 @@ func NewServerBuilder(logger *slog.Logger) *serverBuilder {
 func (b *serverBuilder) WithDatabase(dbType, dbConn string) *serverBuilder {
 	pool, err := db.OpenDB(dbType, dbConn)
 	if err != nil {
-		slog.Error("Error opening database", "error", err)
+		b.logger.Error("Error opening database", "error", err)
 	}
 	b.dbType = dbType
 	b.dbConn = dbConn
@@ -98,20 +98,20 @@ func (b *serverBuilder) StartServer() {
 	go func() {
 		<-quit
 		fmt.Println("")
-		slog.Info("Gracefully shutting down server...")
+		b.logger.Info("Gracefully shutting down server...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if err := b.httpServer.Shutdown(ctx); err != nil {
-			slog.Error("Could not shutdown server", "error", err)
+			b.logger.Error("Could not shutdown server", "error", err)
 		}
 
-		slog.Info("Server Exited Properly")
+		b.logger.Info("Server Exited Properly")
 	}()
 
-	slog.Info("Server Listening on", "address", b.httpServer.Addr)
+	b.logger.Info("Server Listening on", "address", b.httpServer.Addr)
 	if err := b.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("Could not listen on", "address", b.httpServer.Addr, "error", err)
+		b.logger.Error("Could not listen on", "address", b.httpServer.Addr, "error", err)
 	}
 }
