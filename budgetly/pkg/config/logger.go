@@ -4,9 +4,11 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/ZiadMansourM/budgetly/pkg/prettylog"
 )
 
-// InitializeLogger sets up the global logger based on environment variables
+// InitializeLogger initializes the logger based on the environment variables
 func InitializeLogger() *slog.Logger {
 	// Set the log level based on the environment variable
 	levelStr := os.Getenv("LOG_LEVEL")
@@ -27,11 +29,25 @@ func InitializeLogger() *slog.Logger {
 		level = slog.LevelInfo
 	}
 
-	// Create a new logger
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: level, // Set the log level
-	})
-	logger := slog.New(handler)
+	// Determine the log format based on environment variable
+	format := "pretty"
+	if envFormat := os.Getenv("LOG_FRAMEWORK"); envFormat != "" {
+		format = envFormat
+	}
+	var logger *slog.Logger
+
+	// Use `prettylog` if LOG_FRAMEWORK is set to "pretty", otherwise use slog
+	if strings.ToLower(format) == "pretty" {
+		logger = slog.New(prettylog.NewHandler(&slog.HandlerOptions{
+			Level: level,
+		}))
+	} else {
+		// Default to the text handler (slog's default)
+		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: level,
+		})
+		logger = slog.New(handler)
+	}
 
 	// Optionally set as default logger
 	slog.SetDefault(logger)

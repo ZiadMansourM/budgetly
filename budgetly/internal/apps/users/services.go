@@ -1,6 +1,7 @@
 package users
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/ZiadMansourM/budgetly/pkg/validate"
@@ -8,11 +9,13 @@ import (
 
 type userService struct {
 	userRepo *userModel
+	logger   *slog.Logger
 }
 
-func newUserService(userRepo *userModel) *userService {
+func newUserService(userRepo *userModel, logger *slog.Logger) *userService {
 	return &userService{
 		userRepo: userRepo,
+		logger:   logger,
 	}
 }
 
@@ -21,6 +24,7 @@ func (s *userService) register(input UserRequest) (*UserResponse, error) {
 	// Validate the user input.
 	if validationErrors := input.Validate(); len(validationErrors) > 0 {
 		// Return the validation errors as a ValidationError.
+		s.logger.Warn("User registration validation failed", "errors", validationErrors)
 		return nil, &validate.ValidationError{Errors: validationErrors}
 	}
 
@@ -35,12 +39,12 @@ func (s *userService) register(input UserRequest) (*UserResponse, error) {
 	// Save the user to the database using the UserModel
 	userID, err := s.userRepo.create(user)
 	if err != nil {
+		s.logger.Error("Error creating user", "error", err)
 		return nil, err
 	}
 
+	s.logger.Debug("User created successfully", "id", userID)
 	user.ID = userID
-
-	// Convert the user entity to UserResponse and return
 	return user.ToResponse(), nil
 }
 

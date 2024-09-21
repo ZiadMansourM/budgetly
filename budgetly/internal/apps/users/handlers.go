@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -12,6 +13,7 @@ import (
 // (e.g., registration, fetching by ID, etc.)
 type userHandler struct {
 	userService *userService
+	logger      *slog.Logger
 }
 
 // Register routes for user-related actions
@@ -26,6 +28,7 @@ func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
 
 	// Decode the JSON request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Warn("Invalid request body", "error", err)
 		utils.WriteJson(
 			w,
 			http.StatusBadRequest,
@@ -37,6 +40,7 @@ func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
 	// Call the service layer to register the user
 	user, err := h.userService.register(req)
 	if err != nil {
+		h.logger.Warn("Error registering user", "error", err)
 		utils.WriteJson(
 			w,
 			http.StatusBadRequest,

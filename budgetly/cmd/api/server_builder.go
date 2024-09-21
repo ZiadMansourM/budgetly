@@ -23,13 +23,15 @@ type serverBuilder struct {
 	router      *http.ServeMux
 	httpServer  *http.Server
 	middlewares []func(http.Handler) http.Handler
+	logger      *slog.Logger
 }
 
 // NewServerBuilder initializes the serverBuilder
-func NewServerBuilder() *serverBuilder {
+func NewServerBuilder(logger *slog.Logger) *serverBuilder {
 	return &serverBuilder{
 		router:      http.NewServeMux(),
 		middlewares: []func(http.Handler) http.Handler{},
+		logger:      logger,
 	}
 }
 
@@ -47,7 +49,7 @@ func (b *serverBuilder) WithDatabase(dbType, dbConn string) *serverBuilder {
 
 // WithUserApp sets up the entire User application (model, service, handler, and routes)
 func (b *serverBuilder) WithUserApp() *serverBuilder {
-	userHandler := users.NewUserApp(b.dbPool)
+	userHandler := users.NewUserApp(b.dbPool, b.logger)
 	userHandler.RegisterRoutes(b.router)
 	return b
 }

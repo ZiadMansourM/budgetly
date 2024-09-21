@@ -19,7 +19,7 @@ func main() {
 
 	// Use the builder to assemble the server with plug-and-play apps
 	// E.g. WithUserApp which encapsulate all its components (model, service, handler, routes).
-	serverBuilder := api.NewServerBuilder().
+	serverBuilder := api.NewServerBuilder(logger).
 		WithDatabase("postgres", cfg.DBConnectionString).
 		WithUserApp().
 		WithHealthCheck().

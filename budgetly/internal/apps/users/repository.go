@@ -3,6 +3,7 @@
 package users
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -10,12 +11,14 @@ import (
 
 // userModel wraps the database connection pool using sqlx
 type userModel struct {
-	DB *sqlx.DB
+	DB     *sqlx.DB
+	logger *slog.Logger
 }
 
-func newUserModel(db *sqlx.DB) *userModel {
+func newUserModel(db *sqlx.DB, logger *slog.Logger) *userModel {
 	return &userModel{
-		DB: db,
+		DB:     db,
+		logger: logger,
 	}
 }
 
@@ -32,16 +35,20 @@ func (m *userModel) create(u *User) (int, error) {
 	// Execute the query and return the ID
 	rows, err := m.DB.NamedQuery(query, u)
 	if err != nil {
-		return 0, err
+		m.logger.Error("Error inserting user", "error", err)
+		// Do not expose the error to the client add new error Internal server error only
+		return 0, ErrInternalServer
 	}
 
 	if rows.Next() {
 		err = rows.Scan(&u.ID)
 		if err != nil {
-			return 0, err
+			m.logger.Error("Error scanning user ID", "error", err)
+			return 0, ErrInternalServer
 		}
 	}
 
+	m.logger.Debug("User created successfully", "id", u.ID)
 	return u.ID, nil
 }
 
@@ -54,8 +61,10 @@ func (m *userModel) getByID(id int) (*User, error) {
 	u := &User{}
 	err := m.DB.Get(u, query, id)
 	if err != nil {
-		return nil, err
+		m.logger.Error("Error getting user by ID", "error", err)
+		return nil, ErrInternalServer
 	}
 
+	m.logger.Debug("User retrieved successfully", "id", u.ID)
 	return u, nil
 }
