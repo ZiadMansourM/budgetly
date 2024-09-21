@@ -17,48 +17,18 @@ func newUserService(userRepo *userModel) *userService {
 }
 
 // RegisterUser handles user registration
-func (s *userService) register(username, email, password string) (*User, error) {
-	// Create a struct to validate the input data.
-	userInput := struct {
-		Username string
-		Email    string
-		Password string
-	}{
-		Username: username,
-		Email:    email,
-		Password: password,
-	}
-
-	// Define validation rules for each field, including custom error messages.
-	validationFields := validate.ValidationFields{
-		"Username": validate.Rules(
-			validate.Required,
-			validate.Min(3),
-			validate.ErrorMessage("Username is required and must be at least 3 characters long"),
-		),
-		"Email": validate.Rules(
-			validate.Required,
-			validate.Email,
-			validate.ErrorMessage("A valid email address is required"),
-		),
-		"Password": validate.Rules(
-			validate.Required,
-			validate.Min(6),
-			validate.ErrorMessage("Password must be at least 6 characters long"),
-		),
-	}
-
-	// Perform validation using the validate package.
-	if validationErrors := validate.Validate(userInput, validationFields); len(validationErrors) > 0 {
+func (s *userService) register(input UserInput) (*User, error) {
+	// Validate the user input.
+	if validationErrors := input.Validate(); len(validationErrors) > 0 {
 		// Return the validation errors as a ValidationError.
 		return nil, &validate.ValidationError{Errors: validationErrors}
 	}
 
 	// Create a new user object
 	user := &User{
-		Username:       username,
-		Email:          email,
-		PasswordHashed: hashPassword(password), // Simplified password hashing for this example
+		Username:       input.Username,
+		Email:          input.Email,
+		PasswordHashed: hashPassword(input.Password), // Simplified password hashing for this example
 		CreatedAt:      time.Now(),
 	}
 

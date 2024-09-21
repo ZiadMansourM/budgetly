@@ -20,11 +20,7 @@ func (h *userHandler) RegisterRoutes(router *http.ServeMux) {
 
 // Register is an HTTP handler for registering a new user
 func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
+	var req UserInput
 
 	// Decode the JSON request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -33,7 +29,7 @@ func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call the service layer to register the user
-	user, err := h.userService.register(req.Username, req.Email, req.Password)
+	user, err := h.userService.register(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
