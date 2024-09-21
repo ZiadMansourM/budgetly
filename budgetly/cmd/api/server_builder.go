@@ -97,7 +97,7 @@ func (b *serverBuilder) StartServer() {
 
 	go func() {
 		<-quit
-		fmt.Println("")
+		fmt.Print("\r")
 		b.logger.Info("Gracefully shutting down server...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -8,7 +8,7 @@ import (
 
 func main() {
 	// Load the application settings (includes logger and environment variables).
-	settings, err := settings.Init(".env")
+	settings, err := settings.Init()
 	if err != nil {
 		panic(err)
 	}

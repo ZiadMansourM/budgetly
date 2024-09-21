@@ -6,6 +6,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ZiadMansourM/budgetly/pkg/prettylog"
@@ -13,15 +14,21 @@ import (
 
 // Settings holds the application's configuration, including database connection and server address.
 type Settings struct {
+	BaseDir            string
 	DBConnectionString string
 	ServerAddress      string
 	Logger             *slog.Logger
 }
 
 // Init loads configuration and initializes logging based on environment variables or .env file.
-func Init(envFile string) (*Settings, error) {
+func Init() (*Settings, error) {
+	baseDir, err := getBaseDir()
+	if err != nil {
+		return nil, fmt.Errorf("error getting base directory: %v", err)
+	}
+
 	// Load environment variables from the .env file (if it exists).
-	err := loadEnvFile(envFile)
+	err = loadEnvFile(filepath.Join(baseDir, ".env"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println(".env file not found. Falling back to system environment variables.")
@@ -42,6 +49,8 @@ func Init(envFile string) (*Settings, error) {
 
 	// Attach the logger to the settings.
 	settings.Logger = logger
+
+	settings.BaseDir = baseDir
 
 	return settings, nil
 }
@@ -142,4 +151,14 @@ func loadEnvFile(file string) error {
 	}
 
 	return nil
+}
+
+// getBaseDir determines the base directory of the current file or project
+func getBaseDir() (string, error) {
+	baseDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return "", err
+	}
+
+	return baseDir, nil
 }
