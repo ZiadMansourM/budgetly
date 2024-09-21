@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -49,15 +49,16 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		// Calculate duration
 		duration := time.Since(start)
 
-		// Log in the desired format without manual timestamp (log package includes timestamp automatically)
-		log.Printf(`"%s %s %s" from %s - %d %d bytes in %s`,
-			r.Method,
-			r.URL.String(),
-			r.Proto,       // HTTP version (e.g., "HTTP/1.1")
-			clientIP,      // Client IP address
-			rr.statusCode, // HTTP status code
-			rr.size,       // Response size in bytes
-			duration,      // Time taken
+		// Log the request
+		slog.Info(
+			"HTTP Request",
+			"method", r.Method,
+			"url", r.URL.String(),
+			"proto", r.Proto,
+			"client_ip", clientIP,
+			"status", rr.statusCode,
+			"response_size", rr.size,
+			"duration", duration,
 		)
 	})
 }

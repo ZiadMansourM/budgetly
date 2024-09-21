@@ -1,18 +1,20 @@
 package main
 
 import (
-	"log"
-
 	"github.com/ZiadMansourM/budgetly/cmd/api"
 	"github.com/ZiadMansourM/budgetly/pkg/config"
 	"github.com/ZiadMansourM/budgetly/pkg/middlewares"
 )
 
 func main() {
+	// Initialize logger from environment variables
+	logger := config.InitializeLogger()
+
 	// Load configuration from environment variables or .env file
 	cfg, err := config.LoadConfig(".env")
 	if err != nil {
-		log.Fatalf("Error loading configuration: %v", err)
+		logger.Error("Error loading configuration", "error", err)
+		return
 	}
 
 	// Use the builder to assemble the server with plug-and-play apps
