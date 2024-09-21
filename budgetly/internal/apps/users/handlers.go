@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"github.com/ZiadMansourM/budgetly/utils"
 )
 
 // userHandler is an HTTP handler for user-related operations
@@ -20,23 +22,31 @@ func (h *userHandler) RegisterRoutes(router *http.ServeMux) {
 
 // Register is an HTTP handler for registering a new user
 func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
-	var req UserInput
+	var req UserRequest
 
 	// Decode the JSON request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		utils.WriteJson(
+			w,
+			http.StatusBadRequest,
+			map[string]string{"error": "Invalid request body"},
+		)
 		return
 	}
 
 	// Call the service layer to register the user
 	user, err := h.userService.register(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJson(
+			w,
+			http.StatusBadRequest,
+			map[string]string{"error": err.Error()},
+		)
 		return
 	}
 
 	// Return the newly registered user as a JSON response
-	json.NewEncoder(w).Encode(user)
+	utils.WriteJson(w, http.StatusCreated, user)
 }
 
 // GetByID is an HTTP handler for fetching a user by ID
@@ -44,17 +54,25 @@ func (h *userHandler) getByID(w http.ResponseWriter, r *http.Request) {
 	// Parse the user ID from the URL
 	userID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || userID <= 0 {
-		http.Error(w, "Invalid user ID", http.StatusBadRequest)
+		utils.WriteJson(
+			w,
+			http.StatusBadRequest,
+			map[string]string{"error": "Invalid user ID"},
+		)
 		return
 	}
 
 	// Call the service layer to retrieve the user
 	user, err := h.userService.getByID(userID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJson(
+			w,
+			http.StatusNotFound,
+			map[string]string{"error": "User not found"},
+		)
 		return
 	}
 
 	// Return the user as a JSON response
-	json.NewEncoder(w).Encode(user)
+	utils.WriteJson(w, http.StatusOK, user)
 }

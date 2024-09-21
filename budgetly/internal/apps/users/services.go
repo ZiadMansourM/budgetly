@@ -17,7 +17,7 @@ func newUserService(userRepo *userModel) *userService {
 }
 
 // RegisterUser handles user registration
-func (s *userService) register(input UserInput) (*User, error) {
+func (s *userService) register(input UserRequest) (*UserResponse, error) {
 	// Validate the user input.
 	if validationErrors := input.Validate(); len(validationErrors) > 0 {
 		// Return the validation errors as a ValidationError.
@@ -39,7 +39,9 @@ func (s *userService) register(input UserInput) (*User, error) {
 	}
 
 	user.ID = userID
-	return user, nil
+
+	// Convert the user entity to UserResponse and return
+	return user.ToResponse(), nil
 }
 
 // GetUserByID retrieves a user by their ID

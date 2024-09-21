@@ -19,14 +19,6 @@ func newUserModel(db *sqlx.DB) *userModel {
 	}
 }
 
-type User struct {
-	ID             int       `db:"id"`
-	Username       string    `db:"username"`
-	Email          string    `db:"email"`
-	PasswordHashed string    `db:"password_hashed"`
-	CreatedAt      time.Time `db:"created_at"`
-}
-
 // Create inserts a new user into the database and returns the inserted user's ID
 func (m *userModel) create(u *User) (int, error) {
 	// Use NamedExec for more readable query with named parameters
