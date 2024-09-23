@@ -51,6 +51,7 @@ func (b *serverBuilder) WithDatabase(dbType, dbConn string) *serverBuilder {
 func (b *serverBuilder) WithUserApp() *serverBuilder {
 	userHandler := users.NewUserApp(b.dbPool, b.logger)
 	userHandler.RegisterRoutes(b.router)
+	userHandler.RegisterSSRRoutes(b.router)
 	return b
 }
 
@@ -79,12 +80,25 @@ func (b *serverBuilder) applyMiddlewares(handler http.Handler) http.Handler {
 
 // BuildServer builds the HTTP server with graceful shutdown
 func (b *serverBuilder) BuildServer(addr string) *serverBuilder {
-	v1 := http.NewServeMux()
-	v1.Handle("/api/v1/", http.StripPrefix("/api/v1", b.router))
+	// Create separate subrouters for API and SSR routes
+	apiRouter := http.NewServeMux()
+	ssrRouter := http.NewServeMux()
 
+	// Handle API routes with /api/v1 prefix
+	apiRouter.Handle("/api/v1/", http.StripPrefix("/api/v1", b.router)) // Register API routes without /api/v1 in the handlers
+
+	// Handle SSR routes directly (e.g., for your home or about page)
+	ssrRouter.Handle("/", b.router)
+
+	// Combine the API and SSR routers into one main router
+	mainRouter := http.NewServeMux()
+	mainRouter.Handle("/api/v1/", apiRouter)
+	mainRouter.Handle("/", ssrRouter)
+
+	// Set the server with the combined router and middlewares
 	b.httpServer = &http.Server{
 		Addr:    addr,
-		Handler: b.applyMiddlewares(v1),
+		Handler: b.applyMiddlewares(mainRouter),
 	}
 
 	return b

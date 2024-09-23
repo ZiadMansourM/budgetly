@@ -22,6 +22,24 @@ func (h *userHandler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /users/{id}", h.getByID)
 }
 
+// RegisterSSRRoutes registers SSR routes for user-related actions
+func (h *userHandler) RegisterSSRRoutes(router *http.ServeMux) {
+	router.HandleFunc("/users", h.renderUserListPage) // SSR route for rendering user list
+}
+
+// renderUserListPage is a dummy SSR handler for rendering the user list page
+func (h *userHandler) renderUserListPage(w http.ResponseWriter, r *http.Request) {
+	// Render the user list page
+	page := `
+		<h1>User List</h1>
+		<ul>
+			<li>User 1</li>
+			<li>User 2</li>
+		</ul>
+	`
+	w.Write([]byte(page))
+}
+
 // Register is an HTTP handler for registering a new user
 func (h *userHandler) register(w http.ResponseWriter, r *http.Request) {
 	var req UserRequest
