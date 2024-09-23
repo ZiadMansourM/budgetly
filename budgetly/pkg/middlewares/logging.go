@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -49,6 +50,16 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		// Calculate duration
 		duration := time.Since(start)
 
+		// Format the duration based on magnitude
+		var durationStr string
+		if duration.Milliseconds() >= 1 {
+			// Log in milliseconds if duration >= 1 ms
+			durationStr = fmt.Sprintf("%v ms", duration.Milliseconds())
+		} else {
+			// Log in microseconds if duration < 1 ms
+			durationStr = fmt.Sprintf("%v µs", duration.Microseconds())
+		}
+
 		// Log the request
 		slog.Info(
 			"HTTP Request",
@@ -57,8 +68,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			"proto", r.Proto,
 			"client_ip", clientIP,
 			"status", rr.statusCode,
-			"response_size", rr.size,
-			"duration", duration,
+			"response_size", fmt.Sprintf("%v bytes", rr.size),
+			"duration", durationStr,
 		)
 	})
 }

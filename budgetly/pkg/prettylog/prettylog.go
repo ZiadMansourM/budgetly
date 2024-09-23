@@ -55,7 +55,7 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 }
 
 const (
-	timeFormat = "[15:04:05.000]"
+	timeFormat = "[2006/01/02 15:04:05.000]"
 )
 
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
