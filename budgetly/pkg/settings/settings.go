@@ -18,46 +18,117 @@ type Settings struct {
 	DBConnectionString string
 	ServerAddress      string
 	Logger             *slog.Logger
+	EnvironmentMode    string
 }
 
-// Init loads configuration and initializes logging based on environment variables or .env file.
-func Init() (*Settings, error) {
+// SettingsBuilder is used to build the settings step by step.
+type SettingsBuilder struct {
+	settings *Settings
+	err      error
+}
+
+// NewSettingsBuilder initializes the builder with default values.
+func NewSettingsBuilder() *SettingsBuilder {
+	return &SettingsBuilder{
+		settings: &Settings{},
+	}
+}
+
+// WithBaseDir sets the base directory.
+func (b *SettingsBuilder) WithBaseDir() *SettingsBuilder {
+	if b.err != nil {
+		return b
+	}
+
 	baseDir, err := getBaseDir()
 	if err != nil {
-		return nil, fmt.Errorf("error getting base directory: %v", err)
+		b.err = fmt.Errorf("error getting base directory: %v", err)
+		return b
 	}
-
-	// Load environment variables from the .env file (if it exists).
-	err = loadEnvFile(filepath.Join(baseDir, ".env"))
-	if err != nil {
-		if os.IsNotExist(err) {
-			log.Println(".env file not found. Falling back to system environment variables.")
-		} else {
-			return nil, fmt.Errorf("error loading .env file: %v", err)
-		}
-	}
-
-	// Initialize logger.
-	logger := initializeLogger()
-
-	// Load configuration from environment variables.
-	settings, err := initSettingsFromEnv()
-	if err != nil {
-		logger.Error("Error initializing settings", "error", err)
-		return nil, err
-	}
-
-	// Attach the logger to the settings.
-	settings.Logger = logger
-
-	settings.BaseDir = baseDir
-
-	return settings, nil
+	b.settings.BaseDir = baseDir
+	return b
 }
 
-// initializeLogger initializes the logger based on environment variables.
+// WithEnvironment loads the environment variables, prioritizing the correct .env file based on mode.
+func (b *SettingsBuilder) WithEnvironment() *SettingsBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	// Determine the mode (default is development).
+	mode := os.Getenv("MODE")
+	if mode == "" {
+		mode = "development" // default to development if not set
+	}
+	b.settings.EnvironmentMode = mode
+
+	// Load the appropriate .env file based on mode.
+	var envPath string
+	if mode == "production" {
+		envPath = filepath.Join(b.settings.BaseDir, ".env")
+	} else {
+		envPath = ".env" // Load local .env for non-production
+	}
+
+	err := loadEnvFile(envPath)
+	if err != nil && !os.IsNotExist(err) {
+		b.err = fmt.Errorf("error loading .env file: %v", err)
+		return b
+	}
+
+	return b
+}
+
+// WithLogger initializes the logger based on environment variables.
+func (b *SettingsBuilder) WithLogger() *SettingsBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	logger := initializeLogger()
+	b.settings.Logger = logger
+	return b
+}
+
+// WithDBConnection loads the DB connection string from environment variables.
+func (b *SettingsBuilder) WithDBConnection() *SettingsBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	dbConn := os.Getenv("DB_CONNECTION_STRING")
+	if dbConn == "" {
+		b.err = fmt.Errorf("DB_CONNECTION_STRING is required but not set")
+		return b
+	}
+	b.settings.DBConnectionString = dbConn
+	return b
+}
+
+// WithServerAddress loads the server address from environment variables.
+func (b *SettingsBuilder) WithServerAddress() *SettingsBuilder {
+	if b.err != nil {
+		return b
+	}
+
+	serverAddr := os.Getenv("SERVER_ADDRESS")
+	if serverAddr == "" {
+		serverAddr = "127.0.0.1:8080" // Default for local dev.
+	}
+	b.settings.ServerAddress = serverAddr
+	return b
+}
+
+// Build finalizes the settings creation and returns the Settings or an error.
+func (b *SettingsBuilder) Build() (*Settings, error) {
+	if b.err != nil {
+		return nil, b.err
+	}
+	return b.settings, nil
+}
+
+// Initialize logger based on environment variables.
 func initializeLogger() *slog.Logger {
-	// Set the log level based on the environment variable.
 	levelStr := os.Getenv("LOG_LEVEL")
 	var level slog.Level
 
@@ -74,7 +145,6 @@ func initializeLogger() *slog.Logger {
 		level = slog.LevelInfo
 	}
 
-	// Determine the log format based on environment variables.
 	format := "pretty"
 	if envFormat := os.Getenv("LOG_FRAMEWORK"); envFormat != "" {
 		format = envFormat
@@ -91,26 +161,6 @@ func initializeLogger() *slog.Logger {
 	// Set as the default logger.
 	slog.SetDefault(logger)
 	return logger
-}
-
-// initSettingsFromEnv reads environment variables and initializes the Settings struct.
-func initSettingsFromEnv() (*Settings, error) {
-	settings := &Settings{
-		DBConnectionString: os.Getenv("DB_CONNECTION_STRING"),
-		ServerAddress:      os.Getenv("SERVER_ADDRESS"),
-	}
-
-	// Validate mandatory environment variables.
-	if settings.DBConnectionString == "" {
-		return nil, fmt.Errorf("DB_CONNECTION_STRING is required but not set")
-	}
-
-	// Set default values if optional env vars are not set.
-	if settings.ServerAddress == "" {
-		settings.ServerAddress = "127.0.0.1:8080" // Default for local dev.
-	}
-
-	return settings, nil
 }
 
 // loadEnvFile loads environment variables from a .env file into the process environment.
@@ -130,7 +180,6 @@ func loadEnvFile(file string) error {
 			continue
 		}
 
-		// Split the line into key and value.
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
 			log.Printf("Ignoring malformed line in .env file: %s\n", line)
@@ -140,17 +189,12 @@ func loadEnvFile(file string) error {
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
 
-		// Set environment variable if not already set.
 		if _, exists := os.LookupEnv(key); !exists {
 			os.Setenv(key, value)
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return scanner.Err()
 }
 
 // getBaseDir determines the base directory of the current file or project
@@ -159,6 +203,5 @@ func getBaseDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return baseDir, nil
 }

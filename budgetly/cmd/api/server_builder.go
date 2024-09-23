@@ -49,9 +49,7 @@ func (b *serverBuilder) WithDatabase(dbType, dbConn string) *serverBuilder {
 
 // WithUserApp sets up the entire User application (model, service, handler, and routes)
 func (b *serverBuilder) WithUserApp() *serverBuilder {
-	userHandler := users.NewUserApp(b.dbPool, b.logger)
-	userHandler.RegisterRoutes(b.router)
-	userHandler.RegisterSSRRoutes(b.router)
+	users.NewUserApp(b.dbPool, b.logger, b.router)
 	return b
 }
 

@@ -1,16 +1,25 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ZiadMansourM/budgetly/cmd/api"
 	"github.com/ZiadMansourM/budgetly/pkg/middlewares"
 	"github.com/ZiadMansourM/budgetly/pkg/settings"
 )
 
 func main() {
-	// Load the application settings (includes logger and environment variables).
-	settings, err := settings.Init()
+	// Initialize settings using the builder pattern
+	settings, err := settings.NewSettingsBuilder().
+		WithBaseDir().
+		WithEnvironment().
+		WithLogger().
+		WithDBConnection().
+		WithServerAddress().
+		Build()
+
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("Error initializing settings: %v", err))
 	}
 
 	// Use the builder to assemble the server with plug-and-play apps

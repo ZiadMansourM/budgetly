@@ -14,17 +14,30 @@ import (
 type userHandler struct {
 	userService *userService
 	logger      *slog.Logger
+	router      *http.ServeMux
+}
+
+// newUserHandler creates a new user handler with the provided user service and logger
+func newUserHandler(userService *userService, logger *slog.Logger, router *http.ServeMux) *userHandler {
+	userHandler := &userHandler{
+		userService: userService,
+		logger:      logger,
+		router:      router,
+	}
+	userHandler.registerRoutes()
+	userHandler.registerSSRRoutes()
+	return userHandler
 }
 
 // Register routes for user-related actions
-func (h *userHandler) RegisterRoutes(router *http.ServeMux) {
-	router.HandleFunc("POST /users/register", h.register)
-	router.HandleFunc("GET /users/{id}", h.getByID)
+func (h *userHandler) registerRoutes() {
+	h.router.HandleFunc("POST /users/register", h.register)
+	h.router.HandleFunc("GET /users/{id}", h.getByID)
 }
 
-// RegisterSSRRoutes registers SSR routes for user-related actions
-func (h *userHandler) RegisterSSRRoutes(router *http.ServeMux) {
-	router.HandleFunc("/users", h.renderUserListPage) // SSR route for rendering user list
+// registerSSRRoutes registers SSR routes for user-related actions
+func (h *userHandler) registerSSRRoutes() {
+	h.router.HandleFunc("/users", h.renderUserListPage) // SSR route for rendering user list
 }
 
 // renderUserListPage is a dummy SSR handler for rendering the user list page
