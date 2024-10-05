@@ -1,3 +1,9 @@
+## ToDo
+- [ ] Finish Authentication and Authorization. Plus, OAuth.
+- [ ] Add Templates Support. Explore htmgo.
+- [ ] Support TXs for Database Operations.
+- [ ] Admin Dashboard.
+
 ```bash
 ziadh@Ziads-MacBook-Air budgetly % tree
 .
